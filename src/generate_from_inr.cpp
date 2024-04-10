@@ -16,6 +16,7 @@
 #include <CGAL/make_mesh_3.h>
 #include <CGAL/Labeled_mesh_domain_3.h>
 #include <CGAL/Mesh_3/Detect_features_in_image.h>
+#include <CGAL/Mesh_3/Detect_features_on_image_bbox.h>
 
 namespace pygalmesh {
 
@@ -54,6 +55,8 @@ generate_from_inr(
     const double exude_time_limit,
     const double exude_sliver_bound,
     const double relative_error_bound,
+    const double iso_value,
+    const double value_outside,
     const bool verbose,
     const int seed
     )
@@ -65,14 +68,31 @@ generate_from_inr(
   if (!success) {
     throw "Could not read image file";
   }
+
   Mesh_domain_with_features *cgal_domain;
-  if (with_features)
-      cgal_domain = new Mesh_domain_with_features(
-          Mesh_domain_with_features::create_labeled_image_mesh_domain(
-              image,
-              CGAL::parameters::features_detector(CGAL::Mesh_3::Detect_features_in_image()).relative_error_bound(relative_error_bound)));
-  else
-      cgal_domain = new Mesh_domain_with_features(Mesh_domain_with_features::create_labeled_image_mesh_domain(image, CGAL::parameters::relative_error_bound(relative_error_bound)));
+  if (std::isnan(iso_value)) {
+      if (with_features)
+          cgal_domain = new Mesh_domain_with_features(
+              Mesh_domain_with_features::create_labeled_image_mesh_domain(
+                  image,
+                  CGAL::parameters::features_detector(CGAL::Mesh_3::Detect_features_in_image()).relative_error_bound(relative_error_bound)));
+      else {
+          cgal_domain = new Mesh_domain_with_features(Mesh_domain_with_features::create_labeled_image_mesh_domain(
+                  image,
+                  CGAL::parameters::relative_error_bound(relative_error_bound)));
+      }
+  }
+  else {
+      if (with_features)
+          cgal_domain = new Mesh_domain_with_features(
+              Mesh_domain_with_features::create_gray_image_mesh_domain(
+                  image,
+                  CGAL::parameters::features_detector(CGAL::Mesh_3::Detect_features_on_image_bbox()).relative_error_bound(relative_error_bound).iso_value(iso_value).value_outside(value_outside)));
+      else {
+          cgal_domain =
+              new Mesh_domain_with_features(Mesh_domain::create_gray_image_mesh_domain(image, CGAL::parameters::iso_value(iso_value).value_outside(value_outside)));
+      }
+  }
 
   Mesh_criteria criteria(
       CGAL::parameters::edge_size=max_edge_size_at_feature_edges,
