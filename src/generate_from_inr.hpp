@@ -10,6 +10,7 @@ namespace pygalmesh {
 void generate_from_inr(
     const std::string & inr_filename,
     const std::string & outfile,
+    const std::vector<double> & iso_value,
     const bool lloyd = false,
     const bool odt = false,
     const bool perturb = true,
@@ -24,7 +25,7 @@ void generate_from_inr(
     const double exude_time_limit = 0.0,
     const double exude_sliver_bound = 0.0,
     const double relative_error_bound = 1e-3,
-    const double iso_value = std::nan(""),
+    const int niso_value = 0,
     const double value_outside = 1e-3,
     const bool verbose = true,
     const int seed = 0

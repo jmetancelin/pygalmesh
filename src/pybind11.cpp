@@ -346,6 +346,7 @@ PYBIND11_MODULE(_pygalmesh, m) {
         "_generate_from_inr", &generate_from_inr,
         py::arg("inr_filename"),
         py::arg("outfile"),
+        py::arg("iso_value"),
         py::arg("lloyd") = false,
         py::arg("odt") = false,
         py::arg("perturb") = true,
@@ -360,8 +361,8 @@ PYBIND11_MODULE(_pygalmesh, m) {
         py::arg("exude_time_limit") = 0.0,
         py::arg("exude_sliver_bound") = 0.0,
         py::arg("relative_error_bound") = 1e-3,
-        py::arg("iso_value") = std::nan(""),
-        py::arg("value_outside") = 0.,
+        py::arg("niso_value") = 0,
+        py::arg("value_outside") = 1e-3,
         py::arg("verbose") = true,
         py::arg("seed") = 0
         );

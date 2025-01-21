@@ -34,6 +34,22 @@ typedef CGAL::Mesh_criteria_3<Tr> Mesh_criteria;
 typedef Mesh_criteria::Facet_criteria Facet_criteria;
 typedef Mesh_criteria::Cell_criteria Cell_criteria;
 
+class ImageValueToSubdomainIdx {
+public:
+    // Constructor that takes a boost::flat_set<float>
+    ImageValueToSubdomainIdx(const boost::container::flat_set<float>& inputSet) : mySet(inputSet) {}
+
+    // Overload the () operator
+    int operator()(double v) const {
+        return int(std::distance(mySet.begin(),
+                                 mySet.lower_bound(float(v))));
+    }
+
+private:
+    boost::container::flat_set<float> mySet; // The only member of the class
+};
+
+
 typedef CGAL::Mesh_constant_domain_field_3<Mesh_domain::R,
                                            Mesh_domain::Index> Sizing_field_cell;
 
@@ -41,6 +57,7 @@ void
 generate_from_inr(
     const std::string & inr_filename,
     const std::string & outfile,
+    const std::vector<double> & iso_value,
     const bool lloyd,
     const bool odt,
     const bool perturb,
@@ -55,7 +72,7 @@ generate_from_inr(
     const double exude_time_limit,
     const double exude_sliver_bound,
     const double relative_error_bound,
-    const double iso_value,
+    const int niso_value,
     const double value_outside,
     const bool verbose,
     const int seed
@@ -70,7 +87,7 @@ generate_from_inr(
   }
 
   Mesh_domain_with_features *cgal_domain;
-  if (std::isnan(iso_value)) {
+  if (niso_value==0) {
       if (with_features)
           cgal_domain = new Mesh_domain_with_features(
               Mesh_domain_with_features::create_labeled_image_mesh_domain(
@@ -82,15 +99,43 @@ generate_from_inr(
                   CGAL::parameters::relative_error_bound(relative_error_bound)));
       }
   }
-  else {
+  else if(niso_value==1) {
       if (with_features)
           cgal_domain = new Mesh_domain_with_features(
               Mesh_domain_with_features::create_gray_image_mesh_domain(
                   image,
-                  CGAL::parameters::features_detector(CGAL::Mesh_3::Detect_features_on_image_bbox()).relative_error_bound(relative_error_bound).iso_value(iso_value).value_outside(value_outside)));
+                  CGAL::parameters::features_detector(CGAL::Mesh_3::Detect_features_on_image_bbox()).
+                  relative_error_bound(relative_error_bound).
+                  iso_value(iso_value[0]).
+                  value_outside(value_outside)));
       else {
           cgal_domain =
-              new Mesh_domain_with_features(Mesh_domain::create_gray_image_mesh_domain(image, CGAL::parameters::iso_value(iso_value).value_outside(value_outside)));
+              new Mesh_domain_with_features(Mesh_domain::create_gray_image_mesh_domain(
+                  image,
+                  CGAL::parameters::iso_value(iso_value[0]).
+                  value_outside(value_outside)));
+      }
+  }
+  else {
+      typedef boost::container::flat_set<float> Flat_set;
+      Flat_set iso_values_set;
+      for(int i=0;i<niso_value;i++)
+          iso_values_set.insert(static_cast<float>(iso_value[i]));
+      ImageValueToSubdomainIdx f(iso_values_set);
+      if (with_features)
+          cgal_domain = new Mesh_domain_with_features(
+              Mesh_domain_with_features::create_gray_image_mesh_domain(
+                  image,
+                  CGAL::parameters::features_detector(CGAL::Mesh_3::Detect_features_on_image_bbox()).
+                  relative_error_bound(relative_error_bound).
+                  image_values_to_subdomain_indices(f).
+                  value_outside(value_outside)));
+      else {
+          cgal_domain =
+              new Mesh_domain_with_features(Mesh_domain::create_gray_image_mesh_domain(
+                  image,
+                  CGAL::parameters::image_values_to_subdomain_indices(f).
+                  value_outside(value_outside)));
       }
   }
 

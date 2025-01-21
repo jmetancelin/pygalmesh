@@ -307,18 +307,23 @@ def generate_from_inr(
     exude_time_limit: float = 0.0,
     exude_sliver_bound: float = 0.0,
     relative_error_bound: float = 1e-3,
-    iso_value: float = np.NAN,
+    iso_value: float | tuple = np.NAN,
     value_outside: float = 0.,
     verbose: bool = True,
     seed: int = 0,
 ):
     fh, outfile = tempfile.mkstemp(suffix=".mesh")
     os.close(fh)
-
+    if isinstance(iso_value, float):
+        if np.isnan(iso_value):
+            iso_value = ()
+        else:
+            iso_value = (iso_value, )
     if isinstance(max_cell_circumradius, float):
         _generate_from_inr(
             inr_filename,
             outfile,
+            list(iso_value),
             lloyd=lloyd,
             odt=odt,
             perturb=perturb,
@@ -333,7 +338,7 @@ def generate_from_inr(
             exude_time_limit=exude_time_limit,
             exude_sliver_bound=exude_sliver_bound,
             relative_error_bound=relative_error_bound,
-            iso_value=iso_value,
+            niso_value=len(iso_value),
             verbose=verbose,
             seed=seed,
         )
@@ -464,7 +469,7 @@ def generate_from_array(
     max_facet_distance: float = 0.0,
     max_circumradius_edge_ratio: float = 0.0,
     relative_error_bound: float = 1e-3,
-    iso_value: float = np.NAN,
+    iso_value: float | tuple = np.NAN,
     value_outside: float = 0.,
     verbose: bool = True,
     seed: int = 0,
